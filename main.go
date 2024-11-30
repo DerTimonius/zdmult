@@ -50,7 +50,7 @@ func main() {
 }
 
 func runDeletion(accessible bool) {
-	err := deleteSessions(selectedSessions)
+	sessions, err := deleteSessions(selectedSessions)
 	if err != nil {
 		newForm := huh.NewForm(
 			huh.NewGroup(huh.NewConfirm().Title("It appears that normal deletion didn't work. Do you want to force delete the sessions?").Affirmative("Yes").Negative("No").Value(&confirmed)),
@@ -62,7 +62,7 @@ func runDeletion(accessible bool) {
 		}
 
 		if confirmed {
-			err = forceDeleteSessions(selectedSessions)
+			err = forceDeleteSessions(sessions)
 			if err != nil {
 				fmt.Println("Uh oh:", err)
 				os.Exit(1)
@@ -101,8 +101,8 @@ func getSessions() ([]string, error) {
 	return sessions, nil
 }
 
-func deleteSessions(sessions []string) error {
-	for _, session := range sessions {
+func deleteSessions(sessions []string) ([]string, error) {
+	for idx, session := range sessions {
 		cmd := exec.Command("zellij", "d", session)
 
 		if errors.Is(cmd.Err, exec.ErrDot) {
@@ -111,11 +111,11 @@ func deleteSessions(sessions []string) error {
 
 		err := cmd.Run()
 		if err != nil {
-			return err
+			return sessions[idx:], err
 		}
 	}
 
-	return nil
+	return []string{}, nil
 }
 
 func forceDeleteSessions(sessions []string) error {
